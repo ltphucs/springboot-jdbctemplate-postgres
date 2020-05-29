@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>JdbcTemplate CRUD Example</title>
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Varela+Round">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.1/dist/jquery.validate.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.4.0/bootbox.min.js"></script>
+
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/custom.js"></script>
+
+</head>
+<body>
+<div class="container">
+    <div class="table-wrapper">
+        <div class="table-title">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h2>Manage <b>Employee</b></h2>
+                </div>
+                <div class="col-sm-6">
+                    <a href='javascript:void(0);' onclick="employees.addNew()" class="btn btn-success" ><i class="material-icons">&#xE147;</i> <span>Add New Employee</span></a>
+                </div>
+            </div>
+        </div>
+        <table class="table table-striped table-hover" id="tblEmployee" name="tblEmployee">
+            <thead>
+            <tr>
+                <th>Id</th>
+                <th>Firstname</th>
+                <th>Lastname</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Job Title</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+
+    </div>
+    <div id="modalAddEdit" class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form name="formAddEdit" id="formAddEdit">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="modalTitle" name="modalTitle">Add Employee</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>FirstName</label>
+                            <input type="text" class="form-control" id="firstName" name="firstName">
+                            <input type="hidden" class="form-control" id="id" name="id">
+                        </div>
+                        <div class="form-group">
+                            <label>LastName</label>
+                            <input type="text" class="form-control" id="lastName" name="lastName">
+
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="text" class="form-control" id="email" name="email">
+
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="text" class="form-control" id="phone" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label>JobTitle</label>
+                            <input type="text" class="form-control" id="jobTitle" name="jobTitle">
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <input type="button" class="btn btn-default" data-dismiss="modal" value="Cancel">
+                        <input type="button" class="btn btn-success" value="Add" onclick="employees.save()" >
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    var employees = {} || employees;
+    employees.intTable = function(){
+        $.ajax({
+            url:  globalConfigs.url + "employees",
+            method: "GET",
+            dataType : "JSON",
+            success : function(data){
+                $('#tblEmployee tbody').empty();
+
+                $.each(data, function(i, v){
+                    var strAppend = `<tr>
+                            <td>${v.id}</td>
+                            <td>${v.firstName}</td>
+                            <td>${v.lastName}</td>
+                            <td>${v.email}</td>
+                            <td>${v.phone}</td>
+                            <td>${v.jobTitle}</td>
+                            <td>
+                                <a href="javascript:void(0);" title="Edit" onclick="employees.get(${v.id})" class="edit"><i class="material-icons" data-toggle="tooltip" title="edit">&#xE254;</i></a>
+                                <a href="javascript:void(0);" title="Edit" onclick="employees.delete(${v.id})" class="edit"><i class="material-icons" data-toggle="tooltip" title="delete">&#xE872;</i></a>
+                            </td>
+                        </tr>`
+                    $('#tblEmployee tbody').append(
+                        strAppend
+                    );
+                });
+            }
+        });
+
+    };
+
+    employees.addNew = function(){
+        $('#modalTitle').html("Add new Employee");
+        employees.resetForm();
+        $('#modalAddEdit').modal('show');
+    };
+
+    employees.initValidation =  function(){
+        $("#formAddEdit").validate({
+            rules: {
+                firstName: "required",
+                lastName: "required",
+                phone: "required",
+                email: {
+                    required: true,
+                    email: true
+                },
+                jobTitle: "required",
+            },
+        });
+    }
+
+    employees.resetForm =  function(){
+        $('#id').val(0);
+        $('#name').val('');
+        var validator = $( "#formAddEdit" ).validate();
+        validator.resetForm();
+    }
+
+    employees.get = function(id){
+        $.ajax({
+            url : globalConfigs.url +"employees/" + id,
+            method : "GET",
+            dataType : "json",
+            success : function(data){
+                employees.resetForm();
+                //
+                $('#modalTitle').html("Edit Employee");
+                $('#firstName').val(data.firstName);
+                $('#id').val(data.id);
+                $('#lastName').val(data.lastName);
+                $('#email').val(data.email);
+                $('#phone').val(data.phone);
+                $('#jobTitle').val(data.jobTitle);
+
+                $('#modalAddEdit').modal('show');
+            }
+        });
+    };
+
+    employees.delete = function(id){
+        bootbox.confirm({
+            message: "Delete a city, are you sure?",
+            buttons: {
+                confirm: {
+                    label: 'Yes',
+                    className: 'btn-success'
+                },
+                cancel: {
+                    label: 'No',
+                    className: 'btn-danger'
+                }
+            },
+            callback: function (result) {
+                if (result){
+                    $.ajax({
+                        url : globalConfigs.url +"employees/" + id,
+                        method: "delete",
+                        success : function(data){
+                            console.log("DELETE SUCCESS");
+                            employees.intTable();
+                        },
+                        done: function(data){
+                            console.log("Done SUCCESS");
+                            employees.intTable();
+                        },
+
+                    });
+                }
+            }
+        });
+
+    };
+
+    employees.save = function(){
+        if ($("#formAddEdit").valid()){
+            if($('#id').val() == 0){
+                var employeeObj = {};
+                employeeObj.firstName = $('#firstName').val();
+                employeeObj.lastName = $('#lastName').val();
+                employeeObj.phone = $('#phone').val();
+                employeeObj.email = $('#email').val();
+                employeeObj.jobTitle = $('#jobTitle').val();
+                $.ajax({
+                    url : globalConfigs.url +"employees",
+                    method : "POST",
+                    dataType : "json",
+                    contentType : "application/json",
+                    data : JSON.stringify(employeeObj),
+                    done: function(){
+                        console.log("POST DONE");
+                        $('#modalAddEdit').modal('hide');
+                        //case return http code
+
+                    },
+                    success : function(data){
+                        console.log("POST success");
+                        $('#modalAddEdit').modal('hide');
+                        employees.intTable();
+                    }
+                });
+            }
+            else{
+                var employeeObj = {};
+                employeeObj.firstName = $('#firstName').val();
+                employeeObj.lastName = $('#lastName').val();
+                employeeObj.phone = $('#phone').val();
+                employeeObj.email = $('#email').val();
+                employeeObj.jobTitle = $('#jobTitle').val();
+
+                employeeObj.id = $('#id').val();
+
+                $.ajax({
+                    url : globalConfigs.url +  "employees",
+                    method : "PATCH",
+                    dataType : "json",
+                    contentType : "application/json",
+                    data : JSON.stringify(employeeObj),
+                    success : function(data){
+                        $('#modalAddEdit').modal('hide');
+                        employees.intTable();
+                    }
+                });
+            }
+        }
+
+    };
+
+    employees.init = function(){
+        employees.intTable();
+        employees.initValidation();
+    };
+
+    $(document).ready(function(){
+        employees.init();
+    });
+
+</script>
+</html>
+
