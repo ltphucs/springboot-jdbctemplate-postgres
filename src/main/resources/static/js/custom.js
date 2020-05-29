@@ -23,4 +23,5 @@ $(document).ready(function(){
 
 });
 var globalConfigs = {} || globalConfigs;
-globalConfigs.url = "http://localhost:8080/api/";
+//globalConfigs.url = "http://localhost:8080/api/";
+globalConfigs.url = "https://boot-jdbctemplate.herokuapp.com/api/";
